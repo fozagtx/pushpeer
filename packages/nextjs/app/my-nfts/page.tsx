@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
@@ -38,7 +39,8 @@ const MyNFTs: NextPage = () => {
         return;
       }
 
-      setLoading(true);
+      // Only set loading on initial load, not on re-fetches
+      setLoading(prev => (prev === true ? true : allNFTs.length === 0));
       const fetchedNFTs: NFTData[] = [];
 
       try {
@@ -82,7 +84,7 @@ const MyNFTs: NextPage = () => {
     };
 
     fetchAllNFTs();
-  }, [nftContract, totalSupply, connectedAddress]);
+  }, [nftContract, totalSupply, connectedAddress, allNFTs.length]);
 
   if (!connectedAddress) {
     return (
@@ -187,15 +189,34 @@ const MyNFTs: NextPage = () => {
 };
 
 const NFTCard = ({ nft, isOwned = false }: { nft: NFTData; isOwned?: boolean }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   return (
     <div
       className={`card bg-base-200 shadow-xl hover:shadow-2xl transition-all duration-300 ${
         isOwned ? "ring-2 ring-primary" : ""
       }`}
     >
-      <figure className="px-4 pt-4">
+      <figure className="px-4 pt-4 relative">
         {nft.image ? (
-          <img src={nft.image} alt={nft.name} className="rounded-xl w-full h-64 object-contain bg-base-300" />
+          <>
+            {!imageLoaded && (
+              <div className="rounded-xl w-full h-64 bg-base-300 flex items-center justify-center absolute inset-0 m-4">
+                <span className="loading loading-spinner loading-md"></span>
+              </div>
+            )}
+            <Image
+              src={nft.image}
+              alt={nft.name}
+              width={400}
+              height={256}
+              className={`rounded-xl w-full h-64 object-contain bg-base-300 transition-opacity duration-300 ${
+                imageLoaded ? "opacity-100" : "opacity-0"
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              unoptimized
+            />
+          </>
         ) : (
           <div className="rounded-xl w-full h-64 bg-base-300 flex items-center justify-center">
             <span className="text-4xl">🎨</span>
